@@ -6,6 +6,7 @@ import HomeScreen from './component/HomeScreen';
 import SettingsScreen from './component/SettingsScreen';
 import UserScreen from './component/UserScreen';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Carts from './component/Carts';
 
 
 
@@ -22,7 +23,7 @@ export default function App() {
           <Icon name="home-outline" color={color} size={size} />
         ),
       }}  /> 
-        <Tab.Screen name='Live' component={UserScreen} options={{
+        <Tab.Screen name='Live' component={Carts} options={{
         tabBarLabel: 'Livetream',
         tabBarBadge: 39,
         tabBarIcon: ({ color, size }) => (
