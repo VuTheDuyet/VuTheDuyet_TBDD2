@@ -1,18 +1,21 @@
 // App.js
 
-import React from 'react';
-import { Text, View, SafeAreaView, Image, TextInput } from 'react-native';
+import React, { useState } from 'react';
+import { Text, View, SafeAreaView, Image, TextInput, Button } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import HomeScreen from './component/HomeScreen';
-import SettingsScreen from './component/SettingsScreen';
-import UserScreen from './component/UserScreen';
+import HomeScreen from './page/HomeScreen';
+import SettingsScreen from './page/SettingsScreen';
+import UserScreen from './page/UserScreen';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Carts from './component/Carts';
+import Carts from './page/Carts';
 
 const Tab = createBottomTabNavigator();
 
 export default function App() {
+  const [searchKeyword, setSearchKeyword] = useState(null);
+
+
   return (
     <NavigationContainer>
       <Tab.Navigator>
@@ -32,6 +35,8 @@ export default function App() {
                 <TextInput
                   placeholder="Tìm kiếm"
                   style={{ flex: 1, height: 40, borderColor: 'gray', borderRadius: 20, borderWidth: 1, margin: 10, paddingLeft: 10 }}
+                  value={searchKeyword}
+                  onChangeText={(text) => setSearchKeyword(text)}
                 />
                 <View style={{ width: 30, height: 30, marginRight: 10 }}>
                   <Icon name="notifications-outline" size={30} color="black" />
@@ -57,15 +62,12 @@ export default function App() {
         }}>
           {({ navigation }) => (
             <HomeScreen
-              onSearch={(keyword) => {
-                // Implement your search logic here (if needed)
-                // This is where you can perform actions based on the search keyword
-              }}
+              onSearch={searchKeyword}
             />
           )}
         </Tab.Screen>
-        <Tab.Screen name='Live' component={Carts} options={{
-          tabBarLabel: 'Livetream',
+        <Tab.Screen name='Carts' component={Carts} options={{
+
           tabBarBadge: 39,
           tabBarIcon: ({ color, size }) => (
             <Icon name="camera-outline" color={color} size={size} />
@@ -78,7 +80,7 @@ export default function App() {
             <Icon name="notifications-outline" color={color} size={size} />
           ),
         }} />
-        <Tab.Screen name='Tôi' component={UserScreen} options={{
+        <Tab.Screen name='Login' component={UserScreen} options={{
           tabBarLabel: 'Tôi',
           tabBarBadge: 39,
           tabBarIcon: ({ color, size }) => (

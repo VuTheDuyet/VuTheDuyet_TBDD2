@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+// CartItem.js
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { CheckBox } from 'react-native-elements';
 import axios from 'axios';
 
-const CartItem = ({ id, quantity, isChecked, onToggle, onQuantityChange, onBuy }) => {
+const CartItem = ({ id, quantity, price, isChecked, onToggle, onQuantityChange, onBuy, onRemove }) => {
     const [product, setProduct] = useState(null);
     const [localQuantity, setLocalQuantity] = useState(quantity);
 
@@ -13,7 +13,7 @@ const CartItem = ({ id, quantity, isChecked, onToggle, onQuantityChange, onBuy }
                 const response = await axios.get(`https://fakestoreapi.com/products/${id}`);
                 setProduct(response.data);
             } catch (error) {
-                console.error(`Lỗi khi lấy dữ liệu sản phẩm ${id}:`, error);
+                console.error(`Error fetching product details for productId ${id}:`, error);
             }
         };
 
@@ -23,21 +23,24 @@ const CartItem = ({ id, quantity, isChecked, onToggle, onQuantityChange, onBuy }
     const handleIncrement = () => {
         const newQuantity = localQuantity + 1;
         setLocalQuantity(newQuantity);
-        onQuantityChange(newQuantity);
+        onQuantityChange(id, newQuantity, price); // Pass the updated quantity and price
     };
 
     const handleDecrement = () => {
         if (localQuantity > 1) {
             const newQuantity = localQuantity - 1;
             setLocalQuantity(newQuantity);
-            onQuantityChange(newQuantity);
+            onQuantityChange(id, newQuantity, price); // Pass the updated quantity and price
         }
     };
 
-    const handleBuy = () => {
-        // Tính toán tổng giá trị sản phẩm và gọi hàm onBuy để truyền dữ liệu về Carts
-        const totalPrice = product.price * localQuantity;
+    const handleBuy = async () => {
+        const totalPrice = await calculateTotalPrice(id, localQuantity);
         onBuy({ productId: id, quantity: localQuantity, totalPrice });
+    };
+
+    const handleRemovePress = () => {
+        onRemove(id);
     };
 
     if (!product) {
@@ -50,7 +53,6 @@ const CartItem = ({ id, quantity, isChecked, onToggle, onQuantityChange, onBuy }
 
     return (
         <View style={styles.container}>
-            <CheckBox checked={isChecked} onPress={onToggle} />
             <Image source={{ uri: product.image }} style={styles.image} />
             <View style={styles.textContainer}>
                 <Text style={styles.title}>{product.title}</Text>
@@ -67,11 +69,13 @@ const CartItem = ({ id, quantity, isChecked, onToggle, onQuantityChange, onBuy }
                 <TouchableOpacity style={styles.buyButton} onPress={handleBuy}>
                     <Text style={styles.buttonText}>Buy</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.removeButton} onPress={handleRemovePress}>
+                    <Text style={styles.buttonText}>Remove</Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
 };
-
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
@@ -81,9 +85,6 @@ const styles = StyleSheet.create({
         borderColor: '#ddd',
         borderRadius: 8,
         marginVertical: 5,
-    },
-    checkbox: {
-        marginRight: 10,
     },
     image: {
         width: 50,
@@ -119,6 +120,18 @@ const styles = StyleSheet.create({
     quantity: {
         fontSize: 16,
         marginHorizontal: 5,
+    },
+    buyButton: {
+        backgroundColor: 'blue',
+        padding: 5,
+        borderRadius: 5,
+        marginRight: 5,
+    },
+    removeButton: {
+        backgroundColor: 'red',
+        padding: 5,
+        borderRadius: 5,
+        marginRight: 5,
     },
 });
 

@@ -1,62 +1,71 @@
 import React, { useState, useEffect } from 'react';
-import { Button, FlatList, Dimensions, Image, ScrollView, Text, View, StyleSheet, TouchableOpacity, Modal, TextInput } from 'react-native';
-import Slide from './Slide';
+import { Button, Alert,FlatList, Dimensions, Image, ScrollView, Text, View, StyleSheet, TouchableOpacity, Modal, TextInput } from 'react-native';
+import Slide from '../component/Slide';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import CartItem from './CartItem';
+import { useNavigation } from '@react-navigation/native';
+import CartItem from '../component/CartItem';
+import ProductDetails from '../component/ProductDetail';
 
-function HomeScreen({ navigation }) {
+const HomeScreen = ({isLoggedIn, onSearch }) => {
+
+  const [searchKeyword, setSearchKeyword] = useState('');
+  console.log(onSearch);
+  useEffect(() => {
+    // Kiểm tra xem có nên áp dụng tìm kiếm hay không
+    if (onSearch && onSearch.trim() !== '') {
+      // Thực hiện tìm kiếm
+      const filteredProducts = productData.filter(item =>
+        item.title.toLowerCase().includes(onSearch.toLowerCase())
+      );
+      setDisplayedProducts(filteredProducts);
+    } else {
+      // Nếu không, hiển thị tất cả sản phẩm
+      setDisplayedProducts(productData);
+    }
+  }, [onSearch, productData]);
+  useEffect(() => {
+    if (!isLoggedIn) {
+      // Hiển thị cảnh báo khi chưa đăng nhập
+      Alert.alert(
+        'Thông báo',
+        'Bạn cần đăng nhập để sử dụng ứng dụng.',
+        [
+          {
+            text: 'Đóng',
+            onPress: () => console.log('OK Pressed'),
+          },
+          {
+            text: 'Đăng nhập',
+            onPress: () => navigation.navigate('Login'), // Chuyển hướng đến trang đăng nhập
+          },
+        ],
+        { cancelable: false }
+      );
+    }
+  }, [isLoggedIn, navigation]);
+
+
+
+
   const [productData, setProductData] = useState([]);
   const [numColumns, setNumColumns] = useState(2);
   const [selectedCategory, setSelectedCategory] = useState('All');
+
+
   const [displayedProducts, setDisplayedProducts] = useState([]);
   const [cart, setCart] = useState([]);
+  const [orderList, setOrderList] = useState([]);
+
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [isQuantityModalVisible, setQuantityModalVisible] = useState(false);
-  const [orderList, setOrderList] = useState([]);
-  const [searchKeyword, setSearchKeyword] = useState('');
+
 
   const uniqueCategories = [...new Set(productData.map(item => item.category))];
   const allCategories = ['All', ...uniqueCategories];
 
-
-  const [selectedProducts, setSelectedProducts] = useState([]);
-
-  const handleToggle = (productId) => {
-    setSelectedProducts((prevSelected) => {
-      if (prevSelected.includes(productId)) {
-        return prevSelected.filter((id) => id !== productId);
-      } else {
-        return [...prevSelected, productId];
-      }
-    });
-  };
-
-  const handleRemove = (productId) => {
-    // Xóa sản phẩm khỏi giỏ hàng
-    setCart((prevCart) => prevCart.filter((item) => item.productId !== productId));
-    // Xóa sản phẩm khỏi danh sách đơn hàng
-    setOrderList((prevOrders) => prevOrders.filter((item) => item.productId !== productId));
-    // Bỏ chọn sản phẩm
-    handleToggle(productId);
-  };
-
-  const handleCheckout = () => {
-    if (selectedProducts.length > 0) {
-      // Thực hiện thanh toán cho các sản phẩm đã chọn
-      const paidProducts = cart.filter((item) => selectedProducts.includes(item.productId));
-
-      // TODO: Thực hiện logic thanh toán (gọi API thanh toán, cập nhật trạng thái đơn hàng, ...)
-
-      // Cập nhật giỏ hàng và danh sách đơn hàng sau khi thanh toán
-      setCart((prevCart) => prevCart.filter((item) => !selectedProducts.includes(item.productId)));
-      setOrderList((prevOrders) => prevOrders.filter((item) => !selectedProducts.includes(item.productId)));
-
-      // Bỏ chọn các sản phẩm
-      setSelectedProducts([]);
-    }
-  };
+  const [selectedProductIdForModal, setSelectedProductIdForModal] = useState(null);
 
 
   const getDataUsingAsyncAwaitGetCall = async () => {
@@ -68,6 +77,8 @@ function HomeScreen({ navigation }) {
       console.error('Error fetching product data:', error.message);
     }
   };
+
+  const navigation = useNavigation();
 
   useEffect(() => {
     getDataUsingAsyncAwaitGetCall();
@@ -83,7 +94,6 @@ function HomeScreen({ navigation }) {
   }, [selectedCategory, productData]);
 
   useEffect(() => {
-    // Update displayed products based on search keyword
     const filteredProducts = productData.filter(item =>
       item.title.toLowerCase().includes(searchKeyword.toLowerCase())
     );
@@ -98,6 +108,7 @@ function HomeScreen({ navigation }) {
 
   const addToCart = (productId) => {
     setSelectedProductId(productId);
+    setSelectedProductIdForModal(productId);
     setQuantityModalVisible(true);
   };
 
@@ -114,23 +125,15 @@ function HomeScreen({ navigation }) {
       quantity: selectedQuantity,
     };
 
-    // Thêm sản phẩm vào giỏ hàng
     setCart([...cart, selectedProduct]);
-
-    // Thêm sản phẩm vào danh sách đơn hàng
     setOrderList([...orderList, selectedProduct]);
-
-    // Đóng modal và đặt lại giá trị
     setQuantityModalVisible(false);
     setSelectedProductId(null);
     setSelectedQuantity(1);
-
-    // Hiển thị danh sách đơn hàng trong console
     console.log("Danh sách đơn hàng:", orderList);
   };
 
   const handleCancel = () => {
-    // Đóng modal và đặt lại giá trị
     setQuantityModalVisible(false);
     setSelectedProductId(null);
     setSelectedQuantity(1);
@@ -147,8 +150,10 @@ function HomeScreen({ navigation }) {
     </View>
   );
 
-
-  
+  const handleCheckout = () => {
+    // Xử lý khi người dùng chọn thanh toán
+    console.log("Đã chọn thanh toán!");
+  };
 
   return (
     <ScrollView style={{ flex: 1, width: '100%' }}>
@@ -170,16 +175,6 @@ function HomeScreen({ navigation }) {
         ))}
       </ScrollView>
       <Text style={{ fontSize: 25 }}>Sản phẩm mới</Text>
-      <TextInput
-        placeholder="Tìm kiếm"
-        style={styles.searchInput}
-        onChangeText={(text) => setSearchKeyword(text)}
-        value={searchKeyword}
-        onSubmitEditing={() => {
-          // Khi nhấn Enter trên bàn phím, thực hiện tìm kiếm
-          handleConfirm();
-        }}
-      />
       <FlatList
         data={displayedProducts}
         renderItem={renderItem}
@@ -195,6 +190,9 @@ function HomeScreen({ navigation }) {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
+            <View>
+              <ProductDetails id={selectedProductIdForModal} />
+            </View>
             <Text style={styles.modalTitle}>Chọn số lượng</Text>
             <View style={styles.quantityButtonsContainer}>
               <TouchableOpacity
@@ -220,31 +218,11 @@ function HomeScreen({ navigation }) {
       </Modal>
       <Button
         title="Xem giỏ hàng"
-        onPress={() => navigation.navigate('Carts', { cartList: cart, onCheckout: handleCheckout })}
-      />
-
-      <Text>Gio hang:</Text>
-      {orderList.map((product) => (
-        <CartItem
-          key={product.productId}
-          id={product.productId}
-          quantity={product.quantity}
-          onRemove={() => handleRemove(product.productId)}
-        />
-      ))}
-      {/* Thêm nút chọn thanh toán */}
-      <Button
-        title="Chọn thanh toán"
-        onPress={() => {
-          if (selectedProducts.length > 0) {
-            setQuantityModalVisible(true);
-          }
-        }}
+        onPress={() => navigation.navigate("Carts", { cartList: cart, onCheckout: handleCheckout })}
       />
     </ScrollView>
   );
 }
-
 
 const styles = StyleSheet.create({
   categoryScrollView: {
